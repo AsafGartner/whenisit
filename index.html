@@ -1,0 +1,168 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+html, body {
+    font-family: sans-serif;
+}
+
+.display, .editor {
+    text-align: center;
+}
+
+.display h1 {
+    font-size: 15vh;
+}
+
+.display h2 {
+    font-size: 7vh;
+}
+
+.display h3 {
+    font-size: 5vh;
+}
+
+.display > a {
+    display: inline-block;
+    margin-top: 20px;
+}
+
+.editor {
+    display: none;
+    font-size: 20px;
+}
+
+.editor label {
+    display: inline-block;
+    width: 50px;
+}
+
+.editor input {
+    font-size: 20px;
+    width: 250px;
+}
+
+.editor a {
+    font-family: monospace;
+}
+</style>
+</head>
+<body>
+<div class="display">
+<h1></h1>
+<h2></h2>
+<h3></h3>
+<input id="notify_checkbox" type="checkbox"><label for="notify_checkbox">Notify me when it starts</label><br />
+<a target="_blank" href="">Make your own timer</a>
+</div>
+<div class="editor">
+    <h1>Make a timer</h1>
+    <label for="date_input">Date:</label> <input id="date_input" type="date"><br />
+    <label for="time_input">Time:</label> <input id="time_input" type="time"></br />
+    <label for="title_input">Title:</label> <input id="title_input" type="text"><br />
+    <a target="_blank" href="javascript:;"></a>
+</div>
+<script type="text/javascript">
+var hash = location.hash;
+if (hash.startsWith("#")) {
+    hash = hash.slice(1);
+}
+var splitAt = hash.indexOf(":");
+var timestampString = null;
+var timestamp = null;
+var title = "Your thing";
+var happened = false;
+var notificationState = "unknown";
+if (splitAt == -1) {
+    timestampString = hash.trim();
+} else {
+    timestampString = hash.slice(0, splitAt).trim();
+    if (hash.length > splitAt + 1) {
+        title = decodeURI(hash.slice(splitAt + 1));
+    }
+}
+if (timestampString && timestampString.length > 0) {
+    timestamp = parseInt(timestampString, 10);
+}
+if (timestamp && !isNaN(timestamp) && timestamp >= 0) {
+    timestamp *= 1000;
+    var date = new Date(timestamp);
+    happened = timestamp < new Date().getTime();
+    document.querySelector("h1").textContent = title;
+    document.querySelector("h2").textContent = date.toLocaleString();
+    if (document.querySelector("#notify_checkbox").checked) {
+        if (Notification.permission == "granted") {
+            notificationState = "on";
+        } else {
+            document.querySelector("#notify_checkbox").checked = false;
+        }
+    }
+    document.querySelector("#notify_checkbox").addEventListener("change", updateNotifications);
+    updateTimer();
+} else {
+    document.querySelector(".display").style.display = "none";
+    document.querySelector(".editor").style.display = "block";
+    document.querySelector("input[type=text]").addEventListener("input", updateLink);
+    document.querySelector("input[type=date]").addEventListener("input", updateLink);
+    document.querySelector("input[type=time]").addEventListener("input", updateLink);
+}
+
+function updateTimer() {
+    var now = new Date().getTime();
+    var delta = Math.floor((timestamp - now) / 1000);
+    var past = delta < 0;
+    if (!happened && past) {
+        happened = true;
+        if (notificationState == "on") {
+            new Notification(title + " is starting!!");
+        }
+    }
+    delta = Math.abs(delta);
+    var days = Math.floor(delta / 60 / 60 / 24);
+    var hours = Math.floor(delta / 60 / 60) % 24;
+    var minutes = Math.floor(delta / 60) % 60;
+    var seconds = delta % 60;
+    document.querySelector("h3").textContent = (days > 0 ? days + "d " : "") + (days > 0 || hours > 0 ? hours + "h " : "") + minutes + "m " + seconds + "s" + (past ? " ago" : "");
+    setTimeout(updateTimer, 1000);
+}
+
+function updateNotifications() {
+    var checked = document.querySelector("#notify_checkbox").checked;
+    if (checked) {
+        if (Notification.permission == "granted") {
+            notificationState = "on";
+        } else {
+            Notification.requestPermission().then(function(permission) {
+                if (permission == "granted") {
+                    document.querySelector("#notify_checkbox").checked = true;
+                    notificationState = "on";
+                } else {
+                    document.querySelector("#notify_checkbox").checked = false;
+                }
+            });
+        }
+    } else {
+        notificationState = "off";
+    }
+}
+
+function updateLink() {
+    var title = document.querySelector("input[type=text]").value.trim();
+    var date = document.querySelector("input[type=date]").value.trim();
+    var time = document.querySelector("input[type=time]").value.trim();
+    var linkHash = "";
+    if (date.length > 0 && time.length > 0) {
+        var d = new Date(date + " " + time);
+        linkHash = d.getTime()/1000 + (title.length > 0 ? ":" + encodeURI(title) : "");
+        var url = location.href + "#" + linkHash;
+        document.querySelector(".editor a").setAttribute("href", url);
+        document.querySelector(".editor a").textContent = url;
+    } else {
+        document.querySelector(".editor a").setAttribute("href", "");
+        document.querySelector(".editor a").textContent = "";
+    }
+}
+
+</script>
+</body>
+</The Aristocrats!>
